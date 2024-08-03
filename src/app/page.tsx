@@ -1,10 +1,10 @@
 "use client";
-import { Box, Title, Stack, Textarea, Button, Paper, Container, Text, Modal, TextInput, Tooltip, Group, ActionIcon, useMantineTheme, Transition } from "@mantine/core";
+import { Box, Title, Stack, Textarea, Button, Paper, Container, Text, Modal, TextInput, Tooltip, Group, ActionIcon, useMantineTheme, Transition, Loader } from "@mantine/core";
 import { useState, useRef, useEffect } from "react";
 import presets from "@/data/presets.json";
 import { usePresets } from "@/utils/presetManager";
 import { ErrorBoundary } from "react-error-boundary";
-import { TbHorse, TbArrowBack, TbSettings, TbChevronDown, TbKey, TbX } from "react-icons/tb";
+import { TbHorse, TbArrowBack, TbChevronDown, TbX } from "react-icons/tb";
 import { LuSparkles } from "react-icons/lu";
 import { useMediaQuery } from '@mantine/hooks';
 
@@ -74,12 +74,27 @@ export default function Home() {
       }
 
       let enhancedPrompt = '';
+      let animationFrame: number;
+
+      const animateText = (text: string) => {
+        let index = 0;
+        const animate = () => {
+          if (index <= text.length) {
+            setInput(text.slice(0, index));
+            index++;
+            animationFrame = requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = new TextDecoder().decode(value);
         enhancedPrompt += chunk;
-        setInput(prevInput => prevInput + chunk);
+        cancelAnimationFrame(animationFrame);
+        animateText(enhancedPrompt);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -123,15 +138,6 @@ export default function Home() {
           <Group justify="center" style={{ height: '100%' }}>
             <Title order={3} size={isMobile ? 'h4' : 'h3'}>AI Prompt Enhancer</Title>
           </Group>
-          <Tooltip label="API Key" position="bottom-end">
-            <ActionIcon 
-              onClick={() => setIsSettingsOpen(true)} 
-              variant="subtle"
-              style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }}
-            >
-              <TbKey size="1.2rem" />
-            </ActionIcon>
-          </Tooltip>
         </Box>
         
         <Stack align="stretch" justify="flex-start" h={isMobile ? "auto" : "calc(100vh - 120px)"} fw="md" gap={isMobile ? 'sm' : 'md'}>
@@ -186,8 +192,13 @@ export default function Home() {
                     <TbHorse />
                   </Button>
                 </Tooltip>
-                <Button onClick={enhancePrompt} loading={isEnhancing} leftSection={<LuSparkles />} size={isMobile ? 'sm' : 'md'}>
-                  Enhance
+                <Button 
+                  onClick={enhancePrompt} 
+                  disabled={isEnhancing} 
+                  leftSection={isEnhancing ? <Loader size="xs" /> : <LuSparkles />} 
+                  size={isMobile ? 'sm' : 'md'}
+                >
+                  {isEnhancing ? 'Enhancing...' : 'Enhance'}
                 </Button>
                 <Tooltip label="Undo">
                   <Button 
