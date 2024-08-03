@@ -1,28 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
-  const { input, selectedPreset, customPreset, apiKey } = await request.json();
+  const { input, selectedPreset, customPreset } = await request.json();
 
-  if (!input.trim() || !apiKey) {
-    return NextResponse.json({ error: 'Invalid input or API key' }, { status: 400 });
+  if (!input.trim()) {
+    return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
   try {
-    const groq = new Groq({ apiKey });
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: selectedPreset === "Custom" ? customPreset : selectedPreset },
-        { role: "user", content: input },
-      ],
-      model: "llama3-8b-8192",
-      temperature: 0.5,
-      max_tokens: 1024,
-      top_p: 1,
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: selectedPreset === "Custom" ? customPreset : selectedPreset
     });
 
-    const enhancedPrompt = completion.choices[0]?.message?.content || '';
-    return NextResponse.json({ enhancedPrompt });
+    const result = await model.generateContentStream(input);
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          controller.enqueue(encoder.encode(chunkText));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json({ error: 'An error occurred while processing your request' }, { status: 500 });

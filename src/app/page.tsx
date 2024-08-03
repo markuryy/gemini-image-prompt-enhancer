@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import presets from "@/data/presets.json";
 import { usePresets } from "@/utils/presetManager";
 import { ErrorBoundary } from "react-error-boundary";
-import { useApiKey } from "@/utils/apiKeyManager";
 import { TbHorse, TbArrowBack, TbSettings, TbChevronDown, TbKey, TbX } from "react-icons/tb";
 import { LuSparkles } from "react-icons/lu";
 import { useMediaQuery } from '@mantine/hooks';
@@ -26,9 +25,6 @@ export default function Home() {
   const { presetNames, selectedPreset, setSelectedPreset } = usePresets();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState("");
-  const { apiKey, saveApiKey, removeApiKey } = useApiKey();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isScore9Active, setIsScore9Active] = useState(false);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
@@ -37,13 +33,6 @@ export default function Home() {
   const theme = useMantineTheme();
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
 
-  useEffect(() => {
-    if (!apiKey) {
-      setIsApiKeyModalOpen(true);
-    } else {
-      setIsApiKeyModalOpen(false);
-    }
-  }, [apiKey]);
 
   const toggleScore9 = () => {
     setIsScore9Active(!isScore9Active);
@@ -58,7 +47,7 @@ export default function Home() {
   };
 
   const enhancePrompt = async () => {
-    if (!input.trim() || !apiKey) return;
+    if (!input.trim()) return;
     setIsEnhancing(true);
     setPreviousInput(input);
     setInput("");
@@ -72,7 +61,6 @@ export default function Home() {
         body: JSON.stringify({
           input,
           selectedPreset: selectedPreset === "Custom" ? customPreset : presets[selectedPreset as keyof typeof presets],
-          apiKey,
         }),
       });
 
@@ -80,8 +68,19 @@ export default function Home() {
         throw new Error('API request failed');
       }
 
-      const data = await response.json();
-      setInput(data.enhancedPrompt);
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get response reader');
+      }
+
+      let enhancedPrompt = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = new TextDecoder().decode(value);
+        enhancedPrompt += chunk;
+        setInput(prevInput => prevInput + chunk);
+      }
     } catch (error) {
       console.error("Error:", error);
       setInput("Sorry, I encountered an error.");
@@ -187,7 +186,7 @@ export default function Home() {
                     <TbHorse />
                   </Button>
                 </Tooltip>
-                <Button onClick={enhancePrompt} loading={isEnhancing} disabled={!apiKey} leftSection={<LuSparkles />} size={isMobile ? 'sm' : 'md'}>
+                <Button onClick={enhancePrompt} loading={isEnhancing} leftSection={<LuSparkles />} size={isMobile ? 'sm' : 'md'}>
                   Enhance
                 </Button>
                 <Tooltip label="Undo">
@@ -206,34 +205,6 @@ export default function Home() {
         </Stack>
       </Container>
 
-      <Modal opened={isApiKeyModalOpen} onClose={() => {}} title="Enter GROQ API Key" closeOnClickOutside={false} closeOnEscape={false} size={isMobile ? 'sm' : 'md'}>
-        <Stack>
-          <TextInput
-            placeholder="Enter your GROQ API Key"
-            value={tempApiKey}
-            onChange={(e) => setTempApiKey(e.currentTarget.value)}
-          />
-          <Button onClick={handleSaveApiKey} disabled={!tempApiKey}>
-            Save API Key
-          </Button>
-          <Text ta="center" size="xs">
-            Don't have an API Key? Get one{" "}
-            <a style={{ color: "#74C0FC" }} href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">here</a>
-          </Text>
-        </Stack>
-      </Modal>
-
-      <Modal opened={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Settings" size={isMobile ? 'sm' : 'md'}>
-        <Stack>
-          <Button onClick={() => {
-            removeApiKey();
-            setIsSettingsOpen(false);
-            setIsApiKeyModalOpen(true);
-          }}>
-            Remove API Key
-          </Button>
-        </Stack>
-      </Modal>
 
       <Modal opened={isPresetModalOpen} onClose={() => setIsPresetModalOpen(false)} title="Select Preset" size={isMobile ? 'sm' : 'md'}>
         <Stack>
