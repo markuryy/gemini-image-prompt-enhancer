@@ -208,7 +208,7 @@ export default function Home() {
 
       <Modal opened={isPresetModalOpen} onClose={() => setIsPresetModalOpen(false)} title="Select Preset" size={isMobile ? 'sm' : 'md'}>
         <Stack>
-          {presetNames.map(key => (
+          {presetNames.filter(key => key !== "BasePrompt").map(key => (
             <Button
               key={key}
               onClick={() => {
