@@ -1,13 +1,13 @@
 # AI Prompt Enhancer
 
-This is a Next.js project that uses the GROQ API to enhance AI prompts. It features a user-friendly interface built with Mantine UI components and supports various preset configurations for prompt enhancement.
+This is a Next.js project that uses the Google Gemini 1.5 Flash API to enhance AI prompts. It features a user-friendly interface built with Mantine UI components and supports various preset configurations for prompt enhancement.
 
 ## Features
 
 - Next.js 13 with App Router for efficient, server-side rendered pages
 - Mantine UI components for a sleek, responsive design
 - TypeScript for type-safe code
-- Integration with GROQ API for AI-powered prompt enhancement
+- Integration with Google Gemini 1.5 Flash API for AI-powered prompt enhancement
 - Customizable presets for different enhancement styles
 - Dark mode support
 - Responsive layout that works on both desktop and mobile devices
@@ -33,8 +33,8 @@ This is a Next.js project that uses the GROQ API to enhance AI prompts. It featu
    bun install
    ```
 
-3. Set up your GROQ API key:
-   - Sign up for a GROQ API key at [https://www.groq.com/](https://www.groq.com/)
+3. Set up your Google Gemini API key:
+   - Sign up for a Google Gemini API key at [https://ai.google.dev/](https://ai.google.dev/)
    - You'll be prompted to enter your API key when you first run the application
 
 4. Run the development server:
@@ -84,7 +84,7 @@ To learn more about the technologies used in this project, check out the followi
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Mantine Documentation](https://mantine.dev/)
 - [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [GROQ API Documentation](https://www.groq.com/docs/)
+- [Google Generative AI Documentation](https://ai.google.dev/docs)
 
 ## Deployment
 
